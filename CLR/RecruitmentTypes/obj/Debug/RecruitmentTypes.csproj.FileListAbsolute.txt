@@ -1,0 +1,6 @@
+C:\Users\Administrator\Desktop\RecruitmentTypes\bin\Debug\RecruitmentTypes.dll
+C:\Users\Administrator\Desktop\RecruitmentTypes\bin\Debug\RecruitmentTypes.pdb
+C:\Users\Administrator\Desktop\RecruitmentTypes\obj\Debug\RecruitmentTypes.csproj.AssemblyReference.cache
+C:\Users\Administrator\Desktop\RecruitmentTypes\obj\Debug\RecruitmentTypes.csproj.CoreCompileInputs.cache
+C:\Users\Administrator\Desktop\RecruitmentTypes\obj\Debug\RecruitmentTypes.dll
+C:\Users\Administrator\Desktop\RecruitmentTypes\obj\Debug\RecruitmentTypes.pdb

@@ -1,0 +1,10 @@
+C:\Users\Administrator\Desktop\RecruitmentConsoleApp\bin\Debug\RecruitmentConsoleApp.exe.config
+C:\Users\Administrator\Desktop\RecruitmentConsoleApp\bin\Debug\RecruitmentConsoleApp.exe
+C:\Users\Administrator\Desktop\RecruitmentConsoleApp\bin\Debug\RecruitmentConsoleApp.pdb
+C:\Users\Administrator\Desktop\RecruitmentConsoleApp\bin\Debug\RecruitmentTypes.dll
+C:\Users\Administrator\Desktop\RecruitmentConsoleApp\bin\Debug\RecruitmentTypes.pdb
+C:\Users\Administrator\Desktop\RecruitmentConsoleApp\obj\Debug\RecruitmentConsoleApp.csproj.AssemblyReference.cache
+C:\Users\Administrator\Desktop\RecruitmentConsoleApp\obj\Debug\RecruitmentConsoleApp.csproj.CoreCompileInputs.cache
+C:\Users\Administrator\Desktop\RecruitmentConsoleApp\obj\Debug\Recruitm.0DD8143D.Up2Date
+C:\Users\Administrator\Desktop\RecruitmentConsoleApp\obj\Debug\RecruitmentConsoleApp.exe
+C:\Users\Administrator\Desktop\RecruitmentConsoleApp\obj\Debug\RecruitmentConsoleApp.pdb
