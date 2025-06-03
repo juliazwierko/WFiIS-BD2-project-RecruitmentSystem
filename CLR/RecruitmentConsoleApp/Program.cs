@@ -107,9 +107,31 @@ namespace RecruitmentConsoleApp
             {
                 cmd.Parameters.Add("@info", SqlDbType.NVarChar).Value = value;
 
-                conn.Open();
-                cmd.ExecuteNonQuery();
-                Console.WriteLine("Inserted Candidate.");
+                try
+                {
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                    Console.WriteLine("Inserted Candidate.");
+                }
+                catch (SqlException ex)
+                {
+                    if (ex.Number == 2601 || ex.Number == 2627) 
+                    {
+                        Console.WriteLine("A candidate with this email already exists.");
+                    }
+                    if (ex.Number == 547) 
+                    {
+                        Console.WriteLine("Error: The email address you entered is invalid.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"SQL Error ({ex.Number}): {ex.Message}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"General error: {ex.Message}");
+                }
             }
         }
 

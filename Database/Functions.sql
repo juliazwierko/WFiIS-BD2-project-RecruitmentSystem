@@ -100,3 +100,30 @@ SELECT
 FROM Tasks;
 --TaskTitle	        TaskDescription
 --Technical Task	Implement BST in C#
+
+
+-- 1. WALIDACJA MAILA DLA KANDYDATA
+IF COL_LENGTH('dbo.Candidates', 'EmailComputed') IS NULL
+BEGIN
+    ALTER TABLE Candidates
+    ADD EmailComputed AS dbo.GetCandidateEmail(Info) PERSISTED;
+END
+GO
+
+--SELECT * FROM sys.objects WHERE name = 'IsValidEmail' AND type = 'FN';
+
+CREATE FUNCTION dbo.IsValidEmail(@Email NVARCHAR(255))
+RETURNS BIT
+AS EXTERNAL NAME RecruitmentTypes.[RecruitmentTypes.Candidate].IsValidEmail;
+GO
+
+-- Sprawdzenie i dodanie ograniczenia CK_Candidates_EmailValid
+IF NOT EXISTS (
+    SELECT * FROM sys.check_constraints 
+    WHERE name = 'CK_Candidates_EmailValid' AND parent_object_id = OBJECT_ID('dbo.Candidates')
+)
+BEGIN
+    ALTER TABLE Candidates
+    ADD CONSTRAINT CK_Candidates_EmailValid CHECK (dbo.IsValidEmail(EmailComputed) = 1);
+END
+GO

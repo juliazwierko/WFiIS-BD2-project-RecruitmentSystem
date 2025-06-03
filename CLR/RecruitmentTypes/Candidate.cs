@@ -41,6 +41,14 @@ namespace RecruitmentTypes
             return candidate.IsNull ? SqlString.Null : new SqlString(candidate.Email);
         }
 
+        [SqlFunction(IsDeterministic = true, IsPrecise = true)]
+        public static SqlBoolean IsValidEmail(SqlString email)
+        {
+            if (email.IsNull) return false;
+
+            string pattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            return System.Text.RegularExpressions.Regex.IsMatch(email.Value, pattern);
+        }
         public override string ToString() => $"{Name}|{Email}";
 
         public static Candidate Parse(SqlString s)
