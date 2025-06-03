@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
@@ -56,8 +56,9 @@ namespace RecruitmentConsoleApp
                 Console.WriteLine("\n--- Recruitment Console Menu ---");
                 Console.WriteLine("1. Add Candidate");
                 Console.WriteLine("2. Show All Candidates");
-                Console.WriteLine("3. Exit");
-                Console.Write("Choose an option (1-3): ");
+                Console.WriteLine("3. Delete Candidate");
+                Console.WriteLine("4. Exit");
+                Console.Write("Choose an option (1-4): ");
 
                 string choice = Console.ReadLine();
 
@@ -70,14 +71,81 @@ namespace RecruitmentConsoleApp
                         DisplayAllCandidates();
                         break;
                     case "3":
+                        DeleteCandidateFlow();
+                        break;
+                    case "4":
                         Console.WriteLine("Exiting application.");
-                        return;  // wyjście z programu
+                        return;
                     default:
-                        Console.WriteLine("Invalid choice. Please enter 1, 2, or 3.");
+                        Console.WriteLine("Invalid choice. Please enter a number from 1 to 4.");
                         break;
                 }
             }
         }
+        static void DeleteCandidate(int id)
+        {
+            string query = "DELETE FROM Candidates WHERE Id = @Id";
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.Add("@Id", SqlDbType.Int).Value = id;
+
+                conn.Open();
+                int affectedRows = cmd.ExecuteNonQuery();
+
+                if (affectedRows == 0)
+                {
+                    throw new Exception("No candidate deleted. Id might not exist.");
+                }
+            }
+        }
+
+        static bool CandidateExists(int id)
+        {
+            string query = "SELECT COUNT(*) FROM Candidates WHERE Id = @Id";
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.Add("@Id", SqlDbType.Int).Value = id;
+
+                conn.Open();
+                int count = (int)cmd.ExecuteScalar();
+                return count > 0;
+            }
+        }
+
+        static void DeleteCandidateFlow()
+        {
+            DisplayAllCandidates();
+
+            Console.Write("Enter the Id of the candidate you want to delete: ");
+            string input = Console.ReadLine();
+
+            if (!int.TryParse(input, out int candidateId))
+            {
+                Console.WriteLine("Invalid Id format. Please enter a numeric value.");
+                return;
+            }
+
+            if (!CandidateExists(candidateId))
+            {
+                Console.WriteLine($"Candidate with Id {candidateId} does not exist.");
+                return;
+            }
+
+            try
+            {
+                DeleteCandidate(candidateId);
+                Console.WriteLine("Candidate deleted successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting candidate: {ex.Message}");
+            }
+        }
+
 
         static void AddCandidateFlow()
         {
@@ -107,31 +175,9 @@ namespace RecruitmentConsoleApp
             {
                 cmd.Parameters.Add("@info", SqlDbType.NVarChar).Value = value;
 
-                try
-                {
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-                    Console.WriteLine("Inserted Candidate.");
-                }
-                catch (SqlException ex)
-                {
-                    if (ex.Number == 2601 || ex.Number == 2627) 
-                    {
-                        Console.WriteLine("A candidate with this email already exists.");
-                    }
-                    if (ex.Number == 547) 
-                    {
-                        Console.WriteLine("Error: The email address you entered is invalid.");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"SQL Error ({ex.Number}): {ex.Message}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"General error: {ex.Message}");
-                }
+                conn.Open();
+                cmd.ExecuteNonQuery();
+                Console.WriteLine("Inserted Candidate.");
             }
         }
 
