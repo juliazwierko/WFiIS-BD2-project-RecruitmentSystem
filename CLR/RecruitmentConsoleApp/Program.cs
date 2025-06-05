@@ -15,7 +15,7 @@ namespace RecruitmentConsoleApp
     class Program
     {
         private static readonly string connectionString =
-            @"Data Source=WINSERVER;Initial Catalog=HR;Integrated Security=True;Persist Security Info=False;Pooling=False;";
+            @"Data Source=WINSERVER;Initial Catalog=HR_;Integrated Security=True;Persist Security Info=False;Pooling=False;";
 
         static void Main()
         {
@@ -62,7 +62,11 @@ namespace RecruitmentConsoleApp
                 Console.WriteLine("6. Evaluate Interview");
                 Console.WriteLine("7. Add Final Verdict");
                 Console.WriteLine("8. Show Candidate Decision");
-                Console.WriteLine("9. Exit");
+                Console.WriteLine("9. Add Note to Candidate");
+                Console.WriteLine("10. Show All Notes");
+                Console.WriteLine("11. Exit");
+               
+
                 Console.Write("Choose an option (1-9): ");
 
                 string choice = Console.ReadLine();
@@ -77,7 +81,9 @@ namespace RecruitmentConsoleApp
                     case "6": EvaluateInterviewFlow(); break;
                     case "7": AddFinalVerdictFlow(); break; 
                     case "8": ShowCandidateDecisionFlow(); break;
-                    case "9": return;
+                    case "9": AddNoteToCandidateFlow(); break;
+                    case "10": ShowAllNotesFlow(); break;
+                    case "11": return;
                     default: Console.WriteLine("Invalid choice. Please enter a number from 1 to 9."); break;
                 }
             }
@@ -115,7 +121,6 @@ namespace RecruitmentConsoleApp
                         updateCmd.Parameters.AddWithValue("@id", interviewId);
                         updateCmd.ExecuteNonQuery();
                     }
-
                     int candidateId;
                     string candidateName;
                     string selectQuery = @"
@@ -137,7 +142,6 @@ namespace RecruitmentConsoleApp
                             candidateName = reader.GetString(1);
                         }
                     }
-
                     string summaryString = $"{candidateName}|{verdict}";
 
                     string insertQuery = "INSERT INTO Summaries (CandidateId, Summary) VALUES (@candidateId, @summary)";
@@ -159,109 +163,6 @@ namespace RecruitmentConsoleApp
             }
         }
 
-
-
-
-        static void AssignTaskToInterviewFlow()
-        {
-            Console.Write("Candidate ID: ");
-            if (!int.TryParse(Console.ReadLine(), out int candidateId))
-            {
-                Console.WriteLine("Invalid Candidate ID.");
-                return;
-            }
-
-            Console.Write("Interviewer Name: ");
-            string interviewer = Console.ReadLine();
-            if (string.IsNullOrWhiteSpace(interviewer))
-            {
-                Console.WriteLine("Interviewer name cannot be empty.");
-                return;
-            }
-
-            Console.Write("Interview Date (e.g., 2025-06-04): ");
-            string dateStr = Console.ReadLine();
-
-            if (!DateTime.TryParseExact(dateStr, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out DateTime interviewDate))
-            {
-                Console.WriteLine("Invalid date format. Please use yyyy-MM-dd.");
-                return;
-            }
-            if (interviewDate.Date < DateTime.Today)
-            {
-                Console.WriteLine("Interview date cannot be earlier than today.");
-                return;
-            }
-
-            Console.Write("Task Title: ");
-            string title = Console.ReadLine();
-            if (string.IsNullOrWhiteSpace(title))
-            {
-                Console.WriteLine("Task Title cannot be empty.");
-                return;
-            }
-
-            Console.Write("Task Description: ");
-            string description = Console.ReadLine();
-            if (string.IsNullOrWhiteSpace(description))
-            {
-                Console.WriteLine("Task Description cannot be empty.");
-                return;
-            }
-
-            var interview = new RecruitmentTypes.Interview
-            {
-                Interviewer = interviewer,
-                Date = dateStr  
-            };
-
-            int interviewId;
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                conn.Open();
-
-                using (SqlCommand createCmd = new SqlCommand("CreateInterviewd", conn))
-                {
-                    createCmd.CommandType = CommandType.StoredProcedure;
-                    createCmd.Parameters.AddWithValue("@CandidateId", candidateId);
-
-                    var interviewParam = createCmd.Parameters.Add("@InterviewData", SqlDbType.Udt);
-                    interviewParam.UdtTypeName = "Interview";
-                    interviewParam.Value = interview;
-
-                    var outputParam = new SqlParameter("@InterviewId", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.Output
-                    };
-                    createCmd.Parameters.Add(outputParam);
-
-                    createCmd.ExecuteNonQuery();
-
-                    interviewId = (int)outputParam.Value;
-                }
-
-                Console.WriteLine($"Interview created with ID: {interviewId}");
-
-                // 2. Przypisanie zadania
-                using (SqlCommand assignCmd = new SqlCommand("AssignTaskToInterview", conn))
-                {
-                    assignCmd.CommandType = CommandType.StoredProcedure;
-                    assignCmd.Parameters.AddWithValue("@InterviewId", interviewId);
-                    assignCmd.Parameters.AddWithValue("@CandidateId", candidateId);
-                    assignCmd.Parameters.AddWithValue("@Title", title);
-                    assignCmd.Parameters.AddWithValue("@Description", description);
-
-                    assignCmd.ExecuteNonQuery();
-                }
-
-                Console.WriteLine("Task assigned to interview successfully.");
-            }
-        }
-
-
-
-
         static void ShowUnratedInterviews()
         {
             using (SqlConnection conn = new SqlConnection(connectionString))
@@ -281,6 +182,8 @@ namespace RecruitmentConsoleApp
 
         static void EvaluateInterviewFlow()
         {
+            ShowUnratedInterviews();
+
             Console.Write("Interview ID: ");
             if (!int.TryParse(Console.ReadLine(), out int interviewId))
             {
@@ -317,10 +220,12 @@ namespace RecruitmentConsoleApp
             Console.WriteLine("Interview evaluated.");
         }
 
-
         static void ShowCandidateDecisionFlow()
-        {
+        {  
+            DisplayAllCandidates();
+
             Console.Write("Candidate ID: ");
+           
             int candidateId = int.Parse(Console.ReadLine());
 
             using (SqlConnection conn = new SqlConnection(connectionString))
@@ -382,8 +287,9 @@ namespace RecruitmentConsoleApp
             DisplayAllCandidates();
 
             Console.Write("Enter the Id of the candidate you want to delete: ");
-            string input = Console.ReadLine();
 
+            string input = Console.ReadLine();
+    
             if (!int.TryParse(input, out int candidateId))
             {
                 Console.WriteLine("Invalid Id format. Please enter a numeric value.");
@@ -411,6 +317,7 @@ namespace RecruitmentConsoleApp
         static void AddCandidateFlow()
         {
             Console.Write("Enter candidate name: ");
+          
             string name = Console.ReadLine();
 
             Console.Write("Enter candidate email: ");
@@ -444,7 +351,7 @@ namespace RecruitmentConsoleApp
                 }
                 catch (SqlException ex)
                 {
-                    if (ex.Number == 2601 || ex.Number == 2627)
+                    if (ex.Number == 2601 || ex.Number == 2627) 
                     {
                         Console.WriteLine("A candidate with this email already exists.");
                     }
@@ -486,5 +393,197 @@ namespace RecruitmentConsoleApp
                 }
             }
         }
+
+        static void AssignTaskToInterviewFlow()
+        {
+            DisplayAllCandidates();
+
+
+            Console.Write("Candidate ID: ");
+            if (!int.TryParse(Console.ReadLine(), out int candidateId))
+            {
+                Console.WriteLine("Invalid Candidate ID.");
+                return;
+            }
+
+            Console.Write("Interviewer Name: ");
+            string interviewer = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(interviewer))
+            {
+                Console.WriteLine("Interviewer name cannot be empty.");
+                return;
+            }
+
+            Console.Write("Interview Date (e.g., 2025-06-04): ");
+            string dateStr = Console.ReadLine();
+
+          
+            if (!DateTime.TryParseExact(dateStr, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out DateTime interviewDate))
+            {
+                Console.WriteLine("Invalid date format. Please use yyyy-MM-dd.");
+                return;
+            }
+            if (interviewDate.Date < DateTime.Today)
+            {
+                Console.WriteLine("Interview date cannot be earlier than today.");
+                return;
+            }
+
+            Console.Write("Task Title: ");
+            string title = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                Console.WriteLine("Task Title cannot be empty.");
+                return;
+            }
+
+            Console.Write("Task Description: ");
+            string description = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                Console.WriteLine("Task Description cannot be empty.");
+                return;
+            }
+
+            var interview = new RecruitmentTypes.Interview
+            {
+                Interviewer = interviewer,
+                Date = dateStr  
+            };
+
+            int interviewId;
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+             
+                using (SqlCommand createCmd = new SqlCommand("CreateInterviewd", conn))
+                {
+                    createCmd.CommandType = CommandType.StoredProcedure;
+                    createCmd.Parameters.AddWithValue("@CandidateId", candidateId);
+
+                    var interviewParam = createCmd.Parameters.Add("@InterviewData", SqlDbType.Udt);
+                    interviewParam.UdtTypeName = "Interview";
+                    interviewParam.Value = interview;
+
+                    var outputParam = new SqlParameter("@InterviewId", SqlDbType.Int)
+                    {
+                        Direction = ParameterDirection.Output
+                    };
+                    createCmd.Parameters.Add(outputParam);
+
+                    createCmd.ExecuteNonQuery();
+
+                    interviewId = (int)outputParam.Value;
+                }
+
+                Console.WriteLine($"Interview created with ID: {interviewId}");
+
+               
+                using (SqlCommand assignCmd = new SqlCommand("AssignTaskToInterview", conn))
+                {
+                    assignCmd.CommandType = CommandType.StoredProcedure;
+                    assignCmd.Parameters.AddWithValue("@InterviewId", interviewId);
+                    assignCmd.Parameters.AddWithValue("@CandidateId", candidateId);
+                    assignCmd.Parameters.AddWithValue("@Title", title);
+                    assignCmd.Parameters.AddWithValue("@Description", description);
+
+                    assignCmd.ExecuteNonQuery();
+                }
+
+                Console.WriteLine("Task assigned to interview successfully.");
+            }
+        }
+
+        static void AddNoteToCandidateFlow()
+        {
+            DisplayAllCandidates();
+
+            Console.Write("Enter Candidate ID: ");
+            if (!int.TryParse(Console.ReadLine(), out int candidateId))
+            {
+                Console.WriteLine("Invalid ID.");
+                return;
+            }
+
+            Console.Write("Enter note text: ");
+            string text = Console.ReadLine();
+
+            DateTime createdAt = DateTime.UtcNow;
+            string noteValue = $"{text}|{createdAt:O}"; 
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                string insertQuery = "INSERT INTO HRNotes (CandidateId, Note) VALUES (@cid, CONVERT(HrNote, @note))";
+
+                try
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = new SqlCommand(insertQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@cid", candidateId);
+                        cmd.Parameters.AddWithValue("@note", noteValue);
+                        int rows = cmd.ExecuteNonQuery();
+
+                        if (rows > 0)
+                            Console.WriteLine("Note added successfully.");
+                        else
+                            Console.WriteLine("Note not added.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error adding note: " + ex.Message);
+                }
+            }
+        }
+
+        static void ShowAllNotesFlow()
+        {
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                string query = @"
+            SELECT 
+                n.Id,
+                n.CandidateId,
+                dbo.HrNote_GetText(n.Note) AS NoteText,
+                dbo.HrNote_GetCreatedAt(n.Note) AS CreatedAt
+            FROM HRNotes n
+            ORDER BY n.CandidateId, CreatedAt DESC";
+
+                try
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (!reader.HasRows)
+                        {
+                            Console.WriteLine("No notes found in the system.");
+                            return;
+                        }
+
+                        Console.WriteLine("\n--- All Candidate Notes ---");
+
+                        while (reader.Read())
+                        {
+                            int noteId = reader.GetInt32(0);
+                            int candidateId = reader.GetInt32(1);
+                            string noteText = reader.IsDBNull(2) ? "(null)" : reader.GetString(2);
+                            DateTime createdAt = reader.GetDateTime(3);
+
+                            Console.WriteLine($"[Note ID {noteId}] Candidate ID: {candidateId} | {createdAt:g} | {noteText}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error retrieving notes: " + ex.Message);
+                }
+            }
+        }
+
+
     }
 }
