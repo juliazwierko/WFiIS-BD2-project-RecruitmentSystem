@@ -18,7 +18,7 @@ namespace RecruitmentTypes
         public static Interview Null => new Interview { isNull = true };
 
         public string Interviewer { get; set; }
-        public string Date { get; set; } // lub DateTime jeśli chcesz
+        public string Date { get; set; }
 
         [SqlFunction(IsDeterministic = true, IsPrecise = true)]
         public static SqlString ToStringStatic(Interview interview)

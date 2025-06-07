@@ -11,7 +11,6 @@ using System.Text.RegularExpressions;
 
 using RecruitmentTypes;
 
-
 namespace RecruitmentConsoleApp
 {
     class Program
@@ -405,7 +404,6 @@ namespace RecruitmentConsoleApp
             var regex = new System.Text.RegularExpressions.Regex("^[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻż]+$");
             return parts.All(part => regex.IsMatch(part));
         }
-
 
         static void InsertCandidate(string name, string email)
         {

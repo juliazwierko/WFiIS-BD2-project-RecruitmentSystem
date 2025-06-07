@@ -44,6 +44,6 @@ CREATE TABLE HRNotes(
     Note HrNote NOT NULL
 );
 
--- Add status to check is intervie is evaluated
+-- Add status to check is interview is evaluated
 ALTER TABLE Interviews
 ADD IsEvaluated BIT NOT NULL DEFAULT 0;

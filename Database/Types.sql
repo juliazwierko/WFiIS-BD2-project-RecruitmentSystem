@@ -1,4 +1,3 @@
--- definicje typów UDT
 USE HR_;
 GO
 
