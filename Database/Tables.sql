@@ -6,6 +6,13 @@ CREATE TABLE Candidates (
     Info Candidate NOT NULL
 );
 
+IF COL_LENGTH('dbo.Candidates', 'EmailComputed') IS NULL
+BEGIN
+    ALTER TABLE Candidates
+    ADD EmailComputed AS dbo.GetCandidateEmail(Info) PERSISTED;
+END
+GO
+
 CREATE TABLE Interviews (
     Id INT IDENTITY PRIMARY KEY,
     CandidateId INT FOREIGN KEY REFERENCES Candidates(Id),
@@ -14,7 +21,8 @@ CREATE TABLE Interviews (
 
 CREATE TABLE Tasks (
     Id INT IDENTITY PRIMARY KEY,
-    CandidateId INT FOREIGN KEY REFERENCES Candidates(Id),
+    CandidateId INT NOT NULL FOREIGN KEY REFERENCES Candidates(Id),
+    InterviewId INT NOT NULL FOREIGN KEY REFERENCES Interviews(Id),
     TaskDetails TaskItem NOT NULL
 );
 
@@ -35,3 +43,7 @@ CREATE TABLE HRNotes(
     CandidateId INT NOT NULL,
     Note HrNote NOT NULL
 );
+
+-- Add status to check is intervie is evaluated
+ALTER TABLE Interviews
+ADD IsEvaluated BIT NOT NULL DEFAULT 0;

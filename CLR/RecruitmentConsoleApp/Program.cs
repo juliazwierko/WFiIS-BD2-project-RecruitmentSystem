@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
@@ -6,6 +7,7 @@ using System.Text;
 using System.Data;
 using System.Threading.Tasks;
 using System.Configuration;
+using System.Text.RegularExpressions;
 
 using RecruitmentTypes;
 
@@ -66,9 +68,7 @@ namespace RecruitmentConsoleApp
                 Console.WriteLine("10. Show All Notes");
                 Console.WriteLine("11. Exit");
                
-
-                Console.Write("Choose an option (1-9): ");
-
+                Console.Write("Choose an option (1-11): ");
                 string choice = Console.ReadLine();
 
                 switch (choice)
@@ -91,15 +91,27 @@ namespace RecruitmentConsoleApp
 
         static void AddFinalVerdictFlow()
         {
-            Console.Write("Enter Interview ID: ");
-            if (!int.TryParse(Console.ReadLine(), out int interviewId))
+            Console.Write("Enter Interview ID (or 'q' to cancel): ");
+            string interviewInput = Console.ReadLine();
+            if (interviewInput?.Trim().ToLower() == "q")
+            {
+                Console.WriteLine("Operation cancelled.");
+                return;
+            }
+
+            if (!int.TryParse(interviewInput, out int interviewId))
             {
                 Console.WriteLine("Invalid ID.");
                 return;
             }
 
-            Console.Write("Enter final verdict (Accepted / Rejected): ");
+            Console.Write("Enter final verdict (Accepted / Rejected) (or 'q' to cancel): ");
             string verdict = Console.ReadLine();
+            if (verdict?.Trim().ToLower() == "q")
+            {
+                Console.WriteLine("Operation cancelled.");
+                return;
+            }
 
             if (verdict != "Accepted" && verdict != "Rejected")
             {
@@ -184,40 +196,68 @@ namespace RecruitmentConsoleApp
         {
             ShowUnratedInterviews();
 
-            Console.Write("Interview ID: ");
-            if (!int.TryParse(Console.ReadLine(), out int interviewId))
+            Console.Write("Interview ID (or 'q' to cancel): ");
+            string interviewInput = Console.ReadLine();
+            if (interviewInput?.Trim().ToLower() == "q")
+            {
+                Console.WriteLine("Operation cancelled.");
+                return;
+            }
+
+            if (!int.TryParse(interviewInput, out int interviewId))
             {
                 Console.WriteLine("Invalid Interview ID. Please enter a valid integer.");
                 return;
             }
 
-            Console.Write("Evaluator: ");
+            Console.Write("Evaluator (or 'q' to cancel): ");
             string evaluator = Console.ReadLine();
+            if (evaluator?.Trim().ToLower() == "q")
+            {
+                Console.WriteLine("Operation cancelled.");
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(evaluator))
             {
                 Console.WriteLine("Evaluator name cannot be empty.");
                 return;
             }
 
-            Console.Write("Score (1-5): ");
-            if (!int.TryParse(Console.ReadLine(), out int score) || score < 1 || score > 5)
+            Console.Write("Score (1–5) (or 'q' to cancel): ");
+            string scoreInput = Console.ReadLine();
+            if (scoreInput?.Trim().ToLower() == "q")
+            {
+                Console.WriteLine("Operation cancelled.");
+                return;
+            }
+
+            if (!int.TryParse(scoreInput, out int score) || score < 1 || score > 5)
             {
                 Console.WriteLine("Score must be an integer between 1 and 5.");
                 return;
             }
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            using (SqlCommand cmd = new SqlCommand("EvaluateInterview", conn))
+            try
             {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@InterviewId", interviewId);
-                cmd.Parameters.AddWithValue("@Evaluator", evaluator);
-                cmd.Parameters.AddWithValue("@Score", score);
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SqlCommand cmd = new SqlCommand("EvaluateInterview", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@InterviewId", interviewId);
+                    cmd.Parameters.AddWithValue("@Evaluator", evaluator);
+                    cmd.Parameters.AddWithValue("@Score", score);
 
-                conn.Open();
-                cmd.ExecuteNonQuery();
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+
+                Console.WriteLine("Interview evaluated.");
             }
-            Console.WriteLine("Interview evaluated.");
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error evaluating interview: {ex.Message}");
+            }
         }
 
         static void ShowCandidateDecisionFlow()
@@ -248,6 +288,7 @@ namespace RecruitmentConsoleApp
                 }
             }
         }
+
         static void DeleteCandidate(int id)
         {
             string query = "DELETE FROM Candidates WHERE Id = @Id";
@@ -286,10 +327,15 @@ namespace RecruitmentConsoleApp
         {
             DisplayAllCandidates();
 
-            Console.Write("Enter the Id of the candidate you want to delete: ");
-
+            Console.Write("Enter the Id of the candidate you want to delete or 'q' to cancel: ");
             string input = Console.ReadLine();
-    
+
+            if (input?.Trim().ToLower() == "q")
+            {
+                Console.WriteLine("Candidate deletion cancelled.");
+                return;
+            }
+
             if (!int.TryParse(input, out int candidateId))
             {
                 Console.WriteLine("Invalid Id format. Please enter a numeric value.");
@@ -313,15 +359,31 @@ namespace RecruitmentConsoleApp
             }
         }
 
-
         static void AddCandidateFlow()
         {
-            Console.Write("Enter candidate name: ");
-          
+            Console.Write("Enter candidate name (first and last name) or 'q' to cancel: ");
             string name = Console.ReadLine();
 
-            Console.Write("Enter candidate email: ");
+            if (name?.Trim().ToLower() == "q")
+            {
+                Console.WriteLine("Candidate entry cancelled.");
+                return;
+            }
+
+            if (!IsValidName(name))
+            {
+                Console.WriteLine("Invalid name. Please enter a first and last name using only letters.");
+                return;
+            }
+
+            Console.Write("Enter candidate email or 'q' to cancel: ");
             string email = Console.ReadLine();
+
+            if (email?.Trim().ToLower() == "q")
+            {
+                Console.WriteLine("Candidate entry cancelled.");
+                return;
+            }
 
             try
             {
@@ -332,6 +394,18 @@ namespace RecruitmentConsoleApp
                 Console.WriteLine($"Error inserting candidate: {ex.Message}");
             }
         }
+
+        static bool IsValidName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+
+            var parts = name.Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length != 2) return false;
+
+            var regex = new System.Text.RegularExpressions.Regex("^[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻż]+$");
+            return parts.All(part => regex.IsMatch(part));
+        }
+
 
         static void InsertCandidate(string name, string email)
         {
@@ -351,7 +425,7 @@ namespace RecruitmentConsoleApp
                 }
                 catch (SqlException ex)
                 {
-                    if (ex.Number == 2601 || ex.Number == 2627) 
+                    if (ex.Number == 2601 || ex.Number == 2627)
                     {
                         Console.WriteLine("A candidate with this email already exists.");
                     }
@@ -398,47 +472,76 @@ namespace RecruitmentConsoleApp
         {
             DisplayAllCandidates();
 
+            Console.Write("Candidate ID (or 'q' to cancel): ");
+            string candidateInput = Console.ReadLine();
+            if (candidateInput?.Trim().ToLower() == "q")
+            {
+                Console.WriteLine("Operation cancelled.");
+                return;
+            }
 
-            Console.Write("Candidate ID: ");
-            if (!int.TryParse(Console.ReadLine(), out int candidateId))
+            if (!int.TryParse(candidateInput, out int candidateId))
             {
                 Console.WriteLine("Invalid Candidate ID.");
                 return;
             }
 
-            Console.Write("Interviewer Name: ");
+            Console.Write("Interviewer Name (or 'q' to cancel): ");
             string interviewer = Console.ReadLine();
+            if (interviewer?.Trim().ToLower() == "q")
+            {
+                Console.WriteLine("Operation cancelled.");
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(interviewer))
             {
                 Console.WriteLine("Interviewer name cannot be empty.");
                 return;
             }
 
-            Console.Write("Interview Date (e.g., 2025-06-04): ");
+            Console.Write("Interview Date (yyyy-MM-dd) or 'q' to cancel: ");
             string dateStr = Console.ReadLine();
+            if (dateStr?.Trim().ToLower() == "q")
+            {
+                Console.WriteLine("Operation cancelled.");
+                return;
+            }
 
-          
             if (!DateTime.TryParseExact(dateStr, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out DateTime interviewDate))
             {
                 Console.WriteLine("Invalid date format. Please use yyyy-MM-dd.");
                 return;
             }
+
             if (interviewDate.Date < DateTime.Today)
             {
                 Console.WriteLine("Interview date cannot be earlier than today.");
                 return;
             }
 
-            Console.Write("Task Title: ");
+            Console.Write("Task Title (or 'q' to cancel): ");
             string title = Console.ReadLine();
+            if (title?.Trim().ToLower() == "q")
+            {
+                Console.WriteLine("Operation cancelled.");
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(title))
             {
                 Console.WriteLine("Task Title cannot be empty.");
                 return;
             }
 
-            Console.Write("Task Description: ");
+            Console.Write("Task Description (or 'q' to cancel): ");
             string description = Console.ReadLine();
+            if (description?.Trim().ToLower() == "q")
+            {
+                Console.WriteLine("Operation cancelled.");
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(description))
             {
                 Console.WriteLine("Task Description cannot be empty.");
@@ -448,51 +551,56 @@ namespace RecruitmentConsoleApp
             var interview = new RecruitmentTypes.Interview
             {
                 Interviewer = interviewer,
-                Date = dateStr  
+                Date = dateStr
             };
 
             int interviewId;
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            try
             {
-                conn.Open();
-
-             
-                using (SqlCommand createCmd = new SqlCommand("CreateInterviewd", conn))
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    createCmd.CommandType = CommandType.StoredProcedure;
-                    createCmd.Parameters.AddWithValue("@CandidateId", candidateId);
+                    conn.Open();
 
-                    var interviewParam = createCmd.Parameters.Add("@InterviewData", SqlDbType.Udt);
-                    interviewParam.UdtTypeName = "Interview";
-                    interviewParam.Value = interview;
-
-                    var outputParam = new SqlParameter("@InterviewId", SqlDbType.Int)
+                    using (SqlCommand createCmd = new SqlCommand("CreateInterviewd", conn))
                     {
-                        Direction = ParameterDirection.Output
-                    };
-                    createCmd.Parameters.Add(outputParam);
+                        createCmd.CommandType = CommandType.StoredProcedure;
+                        createCmd.Parameters.AddWithValue("@CandidateId", candidateId);
 
-                    createCmd.ExecuteNonQuery();
+                        var interviewParam = createCmd.Parameters.Add("@InterviewData", SqlDbType.Udt);
+                        interviewParam.UdtTypeName = "Interview";
+                        interviewParam.Value = interview;
 
-                    interviewId = (int)outputParam.Value;
+                        var outputParam = new SqlParameter("@InterviewId", SqlDbType.Int)
+                        {
+                            Direction = ParameterDirection.Output
+                        };
+                        createCmd.Parameters.Add(outputParam);
+
+                        createCmd.ExecuteNonQuery();
+
+                        interviewId = (int)outputParam.Value;
+                    }
+
+                    Console.WriteLine($"Interview created with ID: {interviewId}");
+
+                    using (SqlCommand assignCmd = new SqlCommand("AssignTaskToInterview", conn))
+                    {
+                        assignCmd.CommandType = CommandType.StoredProcedure;
+                        assignCmd.Parameters.AddWithValue("@InterviewId", interviewId);
+                        assignCmd.Parameters.AddWithValue("@CandidateId", candidateId);
+                        assignCmd.Parameters.AddWithValue("@Title", title);
+                        assignCmd.Parameters.AddWithValue("@Description", description);
+
+                        assignCmd.ExecuteNonQuery();
+                    }
+
+                    Console.WriteLine("Task assigned to interview successfully.");
                 }
-
-                Console.WriteLine($"Interview created with ID: {interviewId}");
-
-               
-                using (SqlCommand assignCmd = new SqlCommand("AssignTaskToInterview", conn))
-                {
-                    assignCmd.CommandType = CommandType.StoredProcedure;
-                    assignCmd.Parameters.AddWithValue("@InterviewId", interviewId);
-                    assignCmd.Parameters.AddWithValue("@CandidateId", candidateId);
-                    assignCmd.Parameters.AddWithValue("@Title", title);
-                    assignCmd.Parameters.AddWithValue("@Description", description);
-
-                    assignCmd.ExecuteNonQuery();
-                }
-
-                Console.WriteLine("Task assigned to interview successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
             }
         }
 
@@ -500,18 +608,30 @@ namespace RecruitmentConsoleApp
         {
             DisplayAllCandidates();
 
-            Console.Write("Enter Candidate ID: ");
-            if (!int.TryParse(Console.ReadLine(), out int candidateId))
+            Console.Write("Enter Candidate ID (or 'q' to cancel): ");
+            string candidateInput = Console.ReadLine();
+            if (candidateInput?.Trim().ToLower() == "q")
+            {
+                Console.WriteLine("Operation cancelled.");
+                return;
+            }
+
+            if (!int.TryParse(candidateInput, out int candidateId))
             {
                 Console.WriteLine("Invalid ID.");
                 return;
             }
 
-            Console.Write("Enter note text: ");
+            Console.Write("Enter note text (or 'q' to cancel): ");
             string text = Console.ReadLine();
+            if (text?.Trim().ToLower() == "q")
+            {
+                Console.WriteLine("Operation cancelled.");
+                return;
+            }
 
             DateTime createdAt = DateTime.UtcNow;
-            string noteValue = $"{text}|{createdAt:O}"; 
+            string noteValue = $"{text}|{createdAt:O}";
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
@@ -544,13 +664,13 @@ namespace RecruitmentConsoleApp
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 string query = @"
-            SELECT 
-                n.Id,
-                n.CandidateId,
-                dbo.HrNote_GetText(n.Note) AS NoteText,
-                dbo.HrNote_GetCreatedAt(n.Note) AS CreatedAt
-            FROM HRNotes n
-            ORDER BY n.CandidateId, CreatedAt DESC";
+                                SELECT 
+                                    n.Id,
+                                    n.CandidateId,
+                                    dbo.HrNote_GetText(n.Note) AS NoteText,
+                                    dbo.HrNote_GetCreatedAt(n.Note) AS CreatedAt
+                                FROM HRNotes n
+                                ORDER BY n.CandidateId, CreatedAt DESC";
 
                 try
                 {
@@ -566,6 +686,8 @@ namespace RecruitmentConsoleApp
 
                         Console.WriteLine("\n--- All Candidate Notes ---");
 
+                        var noteLines = new List<string>();
+
                         while (reader.Read())
                         {
                             int noteId = reader.GetInt32(0);
@@ -573,7 +695,22 @@ namespace RecruitmentConsoleApp
                             string noteText = reader.IsDBNull(2) ? "(null)" : reader.GetString(2);
                             DateTime createdAt = reader.GetDateTime(3);
 
-                            Console.WriteLine($"[Note ID {noteId}] Candidate ID: {candidateId} | {createdAt:g} | {noteText}");
+                            string line = $"[Note ID {noteId}] Candidate ID: {candidateId} | {createdAt:g} | {noteText}";
+                            Console.WriteLine(line);
+                            noteLines.Add(line);
+                        }
+
+                        Console.Write("\nWould you like to save the notes to a .txt file? (y/n): ");
+                        string choice = Console.ReadLine()?.Trim().ToLower();
+                        if (choice == "y")
+                        {
+                            string fileName = "CandidateNotes.txt";
+                            File.WriteAllLines(fileName, noteLines);
+                            Console.WriteLine($"Notes saved to file: {fileName}");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Notes were not saved.");
                         }
                     }
                 }
@@ -583,7 +720,5 @@ namespace RecruitmentConsoleApp
                 }
             }
         }
-
-
     }
 }

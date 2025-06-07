@@ -59,10 +59,9 @@ namespace RecruitmentTypesTests
             var original = new RecruitmentSummary { CandidateName = "Binary Test", Status = "Completed" };
             using (var ms = new MemoryStream())
             {
-                using (var writer = new BinaryWriter(ms))
-                {
-                    original.Write(writer);
-                }
+                var writer = new BinaryWriter(ms);
+                original.Write(writer);
+                writer.Flush();
 
                 ms.Position = 0;
 

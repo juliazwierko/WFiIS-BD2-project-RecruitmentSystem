@@ -1,5 +1,6 @@
 using System;
 using System.Data.SqlTypes;
+using System.Globalization;
 using System.IO;
 using Microsoft.SqlServer.Server;
 
@@ -18,15 +19,18 @@ namespace RecruitmentTypes
 
         public override string ToString() => $"{Text}|{CreatedAt:o}";
 
-        public static HrNote Parse(SqlString s)
+        public static HrNote Parse(SqlString input)
         {
-            if (s.IsNull) return Null;
+            var parts = input.Value.Split('|');
+            var text = parts[0];
 
-            var parts = s.Value.Split('|');
+            // To poprawnie obsługuje datę UTC
+            var createdAt = DateTime.Parse(parts[1], null, DateTimeStyles.RoundtripKind);
+
             return new HrNote
             {
-                Text = parts[0],
-                CreatedAt = DateTime.Parse(parts[1])
+                Text = text,
+                CreatedAt = createdAt
             };
         }
 

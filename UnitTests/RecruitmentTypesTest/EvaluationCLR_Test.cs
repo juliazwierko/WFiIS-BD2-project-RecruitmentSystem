@@ -86,18 +86,15 @@ namespace RecruitmentTypesTests
             var original = new Evaluation { Evaluator = "Binary Tester", Score = 55 };
             using (var ms = new MemoryStream())
             {
-                using (var writer = new BinaryWriter(ms))
-                {
-                    original.Write(writer);
-                }
+                var writer = new BinaryWriter(ms);
+                original.Write(writer);
+                writer.Flush(); 
 
                 ms.Position = 0;
 
                 var deserialized = new Evaluation();
-                using (var reader = new BinaryReader(ms))
-                {
-                    deserialized.Read(reader);
-                }
+                var reader = new BinaryReader(ms);
+                deserialized.Read(reader);
 
                 Assert.AreEqual(original.Evaluator, deserialized.Evaluator);
                 Assert.AreEqual(original.Score, deserialized.Score);
@@ -105,6 +102,3 @@ namespace RecruitmentTypesTests
         }
     }
 }
-
-
-
